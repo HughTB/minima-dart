@@ -11,7 +11,7 @@ const String codeCharacters =
 
 String hostname = '0.0.0.0';
 String domain = 'http://localhost:8080/';
-int codeLength = 6;
+int? codeLength = 6;
 String filename = "urls.csv";
 
 var rand = Random();
@@ -40,9 +40,16 @@ void main(List<String> arguments) async {
     return;
   }
 
+  codeLength = int.tryParse(args['codelen'] ?? "6");
+
+  if (codeLength == null) {
+    print('Invalid code length value ${args['codelen']}');
+    exitCode = 64;
+    return;
+  }
+
   hostname = args['hostname'] ?? hostname;
   domain = args['domain'] ?? domain;
-  codeLength = int.tryParse(args['codelen']) ?? codeLength;
   filename = args['dbfile'] ?? filename;
 
   await loadCodes(filename);
@@ -73,7 +80,7 @@ void main(List<String> arguments) async {
       return Response.ok('$domain$code');
     }
 
-    code = generateCode(codeLength);
+    code = generateCode(codeLength!);
 
     if (code == null) {
       print('POST - (New code) Failed to generate code within 5 attempts');
@@ -137,7 +144,7 @@ Future<bool> loadCodes(String filename) async {
     }
 
     String code = line.split(';')[0];
-    Uri? url = Uri.tryParse(line.split(';')[1]);
+    Uri? url = Uri.tryParse(Uri.decodeFull(line.split(';')[1]));
 
     if (url == null) {
       print('Unreadable URL for code $code');
@@ -158,7 +165,7 @@ Future<bool> saveCodes(String filename) async {
 
   for (MapEntry<String, Uri> entry in urlMap.entries) {
     if (entry.key != '') {
-      contents += '${entry.key};${entry.value}\n';
+      contents += '${entry.key};${Uri.encodeComponent(entry.value.toString())}\n';
     }
   }
 
